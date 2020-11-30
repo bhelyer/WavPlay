@@ -1,37 +1,58 @@
-#include <iostream>
-#include <stdexcept>
+#include <cstdio>
 #include <AL/AL.h>
 #include <AL/ALC.h>
 
-namespace {  // Don't pollute the global namespace.
-/* Use an object to manage the device and context with RAII.
- * We want to clean up even if an exception is thrown, so doing
- * it in the destructor makes it super clean.
- */
-struct AlContext {
-    ALCdevice* device = nullptr;
-    ALCcontext* context = nullptr;
-
-    AlContext() {
-        device = alcOpenDevice(nullptr);
-        if (device == nullptr) {
-            throw std::runtime_error{"Couldn't open OpenAL device."};
-        }
-        context = alcCreateContext(device, nullptr);
-        if (context == nullptr) {
-            throw std::runtime_error{"Couldn't open OpenAL context."};
-        }
-    }
-
-    ~AlContext() {
-        alcDestroyContext(context);
-        alcCloseDevice(device);
-    }
-};
-}
-
 int main(int, char**) {
-    AlContext alContext;
-    std::cout << "Hello world.\n";
+    // Initialise OpenAL device & context.
+
+    ALCdevice* const device = alcOpenDevice(nullptr);
+    if (device == nullptr) {
+        fprintf(stderr, "Couldn't open OpenAL device.");
+        return 1;
+    }
+
+    ALCcontext* const context = alcCreateContext(device, nullptr);
+    if (context == nullptr) {
+        fprintf(stderr, "Couldn't create OpenAL context.\n");
+        return 1;
+    }
+    if (alcMakeContextCurrent(context) != ALC_TRUE) {
+        fprintf(stderr, "Couldn't make OpenAL context current.\n");
+        return 1;
+    }
+
+    // Create a buffer and source.
+
+    ALuint buffer = 0;
+    alGenBuffers(1, &buffer);
+    if (alGetError() != AL_NO_ERROR) {
+        fprintf(stderr, "Couldn't generate buffer.\n");
+        return 1;
+    }
+
+    ALuint source = 0;
+    alGenSources(1, &source);
+    if (alGetError() != AL_NO_ERROR) {
+        fprintf(stderr, "Couldn't generate source.\n");
+        return 1;
+    }
+
+    // Open the WAV file.
+
+    FILE* fp = nullptr;
+    fopen_s(&fp, "C:/Code/Games/Rile/Rile/data/sound/MenuConfirm.wav", "rb");
+    if (fp == nullptr) {
+        fprintf(stderr, "Could not open file for reading.\n");
+        return 1;
+    }
+
+    printf("Hey, I survived initialisation!\n");
+
+    fclose(fp);
+    alDeleteSources(1, &source);
+    alDeleteBuffers(1, &buffer);
+    alcDestroyContext(context);
+    alcCloseDevice(device);
+
     return 0;
 }
