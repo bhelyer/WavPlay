@@ -3,4 +3,4 @@ project(WavPlay)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(WavPlay main.cpp)
+add_executable(WavPlay WavPlay/main.cpp)
